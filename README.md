@@ -31,6 +31,7 @@ The TUI will walk you through three steps:
 1. Project name
 2. Database — `PostgreSQL (SQLAlchemy)` or `MongoDB (PyMongo)`
 3. Package manager — `pipenv` or `requirements.txt`
+4. Virtual environment — set it up automatically or skip
 
 A new folder named after your project will be created in the current directory.
 
@@ -109,15 +110,28 @@ MONGODB_DB="my-api"
 
 ### 2. Install dependencies
 
-**With pipenv** (if selected during generation — runs automatically):
+**With pipenv + auto venv setup** (runs `pipenv install --dev` automatically):
 ```bash
+cd my-api && pipenv shell
+```
+
+**With pipenv, manual setup:**
+```bash
+cd my-api
+pipenv install --dev
 pipenv shell
 ```
 
-**With requirements.txt:**
+**With requirements.txt + auto venv setup** (`.venv` is created automatically):
+```bash
+source my-api/.venv/bin/activate  # Windows: my-api\.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+**With requirements.txt, manual setup:**
 ```bash
 python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
@@ -138,6 +152,7 @@ pytest
 
 ## Notes
 
-- When using `pipenv`, `pipenv install --dev` runs automatically after scaffolding.
+- If you opt into automatic venv setup with pipenv, `pipenv install --dev` runs right after scaffolding.
+- If you opt into automatic venv setup with requirements.txt, a `.venv` folder is created via `python3 -m venv .venv` — you still need to activate it and run `pip install`.
 - The MongoDB option skips Alembic entirely — no `alembic.ini` or `migrations/` folder is generated.
 - `q` or `Ctrl+C` at any point in the TUI cancels generation without writing any files.

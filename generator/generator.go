@@ -19,6 +19,7 @@ type ProjectConfig struct {
 	IncludeSQLAlchemy bool
 	IncludeMongoDB    bool
 	UsePipenv         bool
+	SetupVenv         bool
 }
 
 // fileMap maps destination path -> template path (executed as Go templates)
@@ -97,9 +98,15 @@ func CreateProject(cfg ProjectConfig) error {
 			return err
 		}
 	}
-	if cfg.UsePipenv {
-		if err := runPipenvInstall(cfg.OutputDir); err != nil {
-			return err
+	if cfg.SetupVenv {
+		if cfg.UsePipenv {
+			if err := runPipenvInstall(cfg.OutputDir); err != nil {
+				return err
+			}
+		} else {
+			if err := runVenvCreate(cfg.OutputDir); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -115,6 +122,27 @@ func runPipenvInstall(dir string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
+}
+
+func runVenvCreate(dir string) error {
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return err
+	}
+	// Create the virtual environment
+	create := exec.Command("python3", "-m", "venv", ".venv")
+	create.Dir = absDir
+	create.Stdout = os.Stdout
+	create.Stderr = os.Stderr
+	if err := create.Run(); err != nil {
+		return err
+	}
+	// Install packages into the venv
+	pip := exec.Command(".venv/bin/pip", "install", "-r", "requirements.txt")
+	pip.Dir = absDir
+	pip.Stdout = os.Stdout
+	pip.Stderr = os.Stderr
+	return pip.Run()
 }
 
 func writeTemplate(cfg ProjectConfig, dest, tmplPath string) error {

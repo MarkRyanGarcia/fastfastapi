@@ -13,6 +13,7 @@ const (
 	stateInputName sessionState = iota
 	stateSelectDB
 	stateSelectPipenv
+	stateSelectVenv
 )
 
 type Model struct {
@@ -23,6 +24,7 @@ type Model struct {
 	Choices     []string
 	Selected    string
 	UsePipenv   bool
+	SetupVenv   bool
 	Quitting    bool
 }
 
@@ -81,6 +83,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			} else if m.State == stateSelectPipenv {
 				m.UsePipenv = m.Cursor == 0
+				m.State = stateSelectVenv
+				m.Cursor = 0
+				return m, nil
+			} else if m.State == stateSelectVenv {
+				m.SetupVenv = m.Cursor == 0
 				return m, tea.Quit
 			}
 
@@ -91,7 +98,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "down", "j":
 			if m.State == stateSelectDB && m.Cursor < len(m.Choices)-1 {
 				m.Cursor++
-			} else if m.State == stateSelectPipenv && m.Cursor < 1 {
+			} else if (m.State == stateSelectPipenv || m.State == stateSelectVenv) && m.Cursor < 1 {
 				m.Cursor++
 			}
 		}
@@ -134,10 +141,29 @@ func (m Model) View() string {
 	}
 
 	// Pipenv selection
-	s := headerStyle.Render("Step 3: Package Manager") + "\n\n"
-	s += fmt.Sprintf("Project: %s | DB: %s\n\nUse pipenv?\n", m.ProjectName, m.Selected)
-	pipenvChoices := []string{"Yes (pipenv)", "No (requirements.txt)"}
-	for i, choice := range pipenvChoices {
+	if m.State == stateSelectPipenv {
+		s := headerStyle.Render("Step 3: Package Manager") + "\n\n"
+		s += fmt.Sprintf("Project: %s | DB: %s\n\nUse pipenv?\n", m.ProjectName, m.Selected)
+		pipenvChoices := []string{"Yes (pipenv)", "No (requirements.txt)"}
+		for i, choice := range pipenvChoices {
+			cursor := " "
+			if m.Cursor == i {
+				cursor = ">"
+			}
+			s += fmt.Sprintf("%s %s\n", cursor, choice)
+		}
+		return s + "\n(j/k to move, enter to select)\n"
+	}
+
+	// Venv setup selection
+	pkgManager := "requirements.txt"
+	if m.UsePipenv {
+		pkgManager = "pipenv"
+	}
+	s := headerStyle.Render("Step 4: Virtual Environment") + "\n\n"
+	s += fmt.Sprintf("Project: %s | DB: %s | PM: %s\n\nInstall pip packages now?\n", m.ProjectName, m.Selected, pkgManager)
+	venvChoices := []string{"Yes", "No"}
+	for i, choice := range venvChoices {
 		cursor := " "
 		if m.Cursor == i {
 			cursor = ">"

@@ -58,6 +58,7 @@ func main() {
 			IncludeSQLAlchemy: isSQL,
 			IncludeMongoDB:    isMongo,
 			UsePipenv:         m.UsePipenv,
+			SetupVenv:         m.SetupVenv,
 		}
 
 		err := generator.CreateProject(config)
@@ -67,6 +68,23 @@ func main() {
 		}
 
 		fmt.Printf("✅ Success! Project generated in ./%s\n", outDir)
+		if m.SetupVenv {
+			cdStep := ""
+			if outDir != "." {
+				cdStep = fmt.Sprintf("   cd %s\n", outDir)
+			}
+			if m.UsePipenv {
+				fmt.Printf("\n💡 To get started:\n%s   pipenv shell\n   fastapi dev app\n", cdStep)
+			} else {
+				fmt.Printf("\n💡 To get started:\n%s   source .venv/bin/activate\n   fastapi dev app\n", cdStep)
+			}
+		} else {
+			if outDir != "." {
+				fmt.Printf("\n💡 To get started:\n   cd %s\n   fastapi dev app\n", outDir)
+			} else {
+				fmt.Printf("\n💡 To get started:\n   fastapi dev app\n")
+			}
+		}
 	} else {
 		fmt.Println("\nGeneration cancelled.")
 	}
