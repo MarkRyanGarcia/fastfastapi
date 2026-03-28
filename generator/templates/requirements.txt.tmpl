@@ -5,6 +5,7 @@ python-dotenv
 {{- if .IncludeSQLAlchemy }}
 sqlalchemy
 alembic
+psycopg2-binary
 {{- end }}
 {{- if .IncludeMongoDB }}
 beanie
