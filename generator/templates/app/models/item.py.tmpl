@@ -1,17 +1,10 @@
-{{- if .IncludeSQLAlchemy }}
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import String, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
 
 class Item(Base):
     __tablename__ = "items"
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, nullable=False)
-    owner_id = Column(Integer, ForeignKey("users.id"))
-{{- else }}
-# Define your Item model here
-class Item:
-    id: int
-    title: str
-    owner_id: int
-{{- end }}
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    owner_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"))

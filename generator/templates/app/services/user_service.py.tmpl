@@ -1,12 +1,16 @@
-from app.schemas.user import UserCreate, UserRead
+from sqlalchemy.orm import Session
+from app.models.user import User
+from app.schemas.user import UserCreate
 
 class UserService:
     @staticmethod
-    async def get_all() -> list[UserRead]:
-        # TODO: implement DB query
-        return []
+    def get_all(db: Session) -> list[User]:
+        return db.query(User).all()
 
     @staticmethod
-    async def create(user: UserCreate) -> UserRead:
-        # TODO: implement DB insert
-        raise NotImplementedError
+    def create(db: Session, user: UserCreate) -> User:
+        db_user = User(**user.model_dump())
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        return db_user

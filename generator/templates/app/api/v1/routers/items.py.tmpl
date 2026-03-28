@@ -1,13 +1,15 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 from app.schemas.item import ItemCreate, ItemRead
 from app.services.item_service import ItemService
+from app.db.session import get_db
 
 router = APIRouter()
 
 @router.get("", response_model=list[ItemRead])
-async def list_items():
-    return await ItemService.get_all()
+def list_items(db: Session = Depends(get_db)):
+    return ItemService.get_all(db)
 
 @router.post("", response_model=ItemRead)
-async def create_item(item: ItemCreate):
-    return await ItemService.create(item)
+def create_item(item: ItemCreate, db: Session = Depends(get_db)):
+    return ItemService.create(db, item)
