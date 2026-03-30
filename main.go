@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -24,10 +25,42 @@ var (
 func pipe() string { return border.Render("│") }
 
 func main() {
-	var initialName string
+	// ── flags ──────────────────────────────────────────────────────────────
+	fs := flag.NewFlagSet("fapi-init", flag.ExitOnError)
+	fs.Usage = func() {
+		fmt.Fprintf(os.Stderr, `Usage: fapi-init [name|.] [flags]
 
-	if len(os.Args) > 1 {
-		arg := os.Args[1]
+Flags:
+  --db        Database: postgres, mongo (default: interactive)
+  --orm       ORM: sqlalchemy, sqlmodel, fastcrud (postgres only)
+  --auth      Auth provider: none, clerk, cognito (default: none)
+  --pkg       Package manager: pip, pipenv (default: pip)
+  --docker    Enable Docker support
+  --redis     Enable Redis caching
+  --install   Install dependencies and start after scaffolding
+  --no-tui    Skip TUI even if flags are incomplete (use defaults)
+
+Examples:
+  fapi-init my-api --db postgres --orm sqlalchemy --auth none --pkg pip
+  fapi-init . --db mongo --docker --redis
+  fapi-init my-api --db postgres --orm fastcrud --docker --install
+`)
+	}
+
+	dbFlag := fs.String("db", "", "Database: postgres, mongo")
+	ormFlag := fs.String("orm", "", "ORM: sqlalchemy, sqlmodel, fastcrud")
+	authFlag := fs.String("auth", "", "Auth: none, clerk, cognito")
+	pkgFlag := fs.String("pkg", "", "Package manager: pip, pipenv")
+	dockerFlag := fs.Bool("docker", false, "Enable Docker support")
+	redisFlag := fs.Bool("redis", false, "Enable Redis caching")
+	installFlag := fs.Bool("install", false, "Install and start after scaffolding")
+	noTUIFlag := fs.Bool("no-tui", false, "Skip TUI, use defaults for missing flags")
+
+	// parse after the optional positional arg
+	args := os.Args[1:]
+	var initialName string
+	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+		arg := args[0]
 		if arg == "." {
 			cwd, err := os.Getwd()
 			if err != nil {
@@ -38,8 +71,17 @@ func main() {
 		} else {
 			initialName = arg
 		}
+		args = args[1:]
+	}
+	fs.Parse(args)
+
+	// ── non-interactive path ───────────────────────────────────────────────
+	if *dbFlag != "" || *noTUIFlag {
+		runNonInteractive(initialName, *dbFlag, *ormFlag, *authFlag, *pkgFlag, *dockerFlag, *redisFlag, *installFlag)
+		return
 	}
 
+	// ── interactive TUI path ───────────────────────────────────────────────
 	p := tea.NewProgram(tui.InitialModelWithName(initialName))
 	finalModel, err := p.Run()
 	if err != nil {
@@ -54,49 +96,113 @@ func main() {
 		return
 	}
 
-	// Print vite-style summary
 	fmt.Println(m.Summary())
 
-	isSQL := strings.Contains(m.Selected, "SQL")
-	isMongo := strings.Contains(m.Selected, "MongoDB")
-	isSQLModel := m.ORMChoice == "SQLModel"
-	isFastCRUD := m.ORMChoice == "FastCRUD"
+	buildAndRun(
+		m.ProjectName,
+		initialName,
+		m.Selected,
+		m.ORMChoice,
+		m.AuthProvider,
+		m.UsePipenv,
+		m.UseDocker,
+		m.UseRedis,
+		m.SetupVenv,
+	)
+}
+
+func runNonInteractive(name, db, orm, auth, pkg string, docker, redis, install bool) {
+	if name == "" {
+		name = "my-fastapi-app"
+	}
+
+	// resolve db
+	var selected string
+	switch strings.ToLower(db) {
+	case "mongo", "mongodb":
+		selected = "MongoDB (PyMongo)"
+	default:
+		selected = "PostgreSQL (SQLAlchemy)"
+	}
+
+	// resolve orm
+	var ormChoice string
+	if !strings.Contains(selected, "MongoDB") {
+		switch strings.ToLower(orm) {
+		case "sqlmodel":
+			ormChoice = "SQLModel"
+		case "fastcrud":
+			ormChoice = "FastCRUD"
+		default:
+			ormChoice = "SQLAlchemy"
+		}
+	}
+
+	// resolve auth
+	var authProvider string
+	switch strings.ToLower(auth) {
+	case "clerk":
+		authProvider = "Clerk"
+	case "cognito", "awscognito", "aws_cognito":
+		authProvider = "AWS Cognito"
+	default:
+		authProvider = "None"
+	}
+
+	usePipenv := strings.ToLower(pkg) == "pipenv"
+
+	fmt.Println(pipe())
+	fmt.Printf("%s  %s %s\n", pipe(), cyan.Render("Project:       "), name)
+	fmt.Printf("%s  %s %s\n", pipe(), cyan.Render("Database:      "), selected)
+	if ormChoice != "" {
+		fmt.Printf("%s  %s %s\n", pipe(), cyan.Render("ORM:           "), ormChoice)
+	}
+	fmt.Printf("%s  %s %s\n", pipe(), cyan.Render("Auth:          "), authProvider)
+	pkgLabel := "pip"
+	if usePipenv {
+		pkgLabel = "pipenv"
+	}
+	fmt.Printf("%s  %s %s\n", pipe(), cyan.Render("Pkg manager:   "), pkgLabel)
+	fmt.Printf("%s  %s %v\n", pipe(), cyan.Render("Docker:        "), docker)
+	fmt.Printf("%s  %s %v\n", pipe(), cyan.Render("Redis:         "), redis)
+	fmt.Println(pipe())
+	fmt.Println(check.Render("◇  ") + green.Render("Scaffolding project in ./"+name+"..."))
+
+	buildAndRun(name, name, selected, ormChoice, authProvider, usePipenv, docker, redis, install)
+}
+
+func buildAndRun(projectName, outArg, selected, ormChoice, authProvider string, usePipenv, useDocker, useRedis, setupVenv bool) {
+	isSQL := strings.Contains(selected, "SQL")
+	isMongo := strings.Contains(selected, "MongoDB")
+	isSQLModel := ormChoice == "SQLModel"
+	isFastCRUD := ormChoice == "FastCRUD"
 	isPlainSQL := isSQL && !isSQLModel && !isFastCRUD
 
-	outDir := m.ProjectName
-	if len(os.Args) > 1 && os.Args[1] == "." {
+	outDir := projectName
+	if outArg == "." {
 		outDir = "."
 	}
 
 	config := generator.ProjectConfig{
-		ProjectName:       m.ProjectName,
+		ProjectName:       projectName,
 		OutputDir:         outDir,
-		Database:          m.Selected,
+		Database:          selected,
 		IncludeSQLAlchemy: isPlainSQL,
 		IncludeMongoDB:    isMongo,
 		UseSQLModel:       isSQLModel,
 		UseFastCRUD:       isFastCRUD,
-		AuthProvider:      m.AuthProvider,
-		UseClerk:          m.AuthProvider == "Clerk",
-		UseCognito:        m.AuthProvider == "AWS Cognito",
-		UsePipenv:         m.UsePipenv,
-		SetupVenv:         m.SetupVenv,
-		UseDocker:         m.UseDocker,
-		UseRedis:          m.UseRedis,
+		AuthProvider:      authProvider,
+		UseClerk:          authProvider == "Clerk",
+		UseCognito:        authProvider == "AWS Cognito",
+		UsePipenv:         usePipenv,
+		SetupVenv:         setupVenv,
+		UseDocker:         useDocker,
+		UseRedis:          useRedis,
 	}
 
-	if m.UseDocker && !generator.IsDockerRunning() {
-		arg0 := "fapi-init"
-		if len(os.Args) > 0 {
-			arg0 = os.Args[0]
-		}
-		rerunArgs := m.ProjectName
-		if len(os.Args) > 1 && os.Args[1] == "." {
-			rerunArgs = "."
-		}
+	if useDocker && !generator.IsDockerRunning() {
 		fmt.Println(errSty.Render("❌ Docker doesn't appear to be running."))
-		fmt.Println(pipe() + "  " + muted.Render("Open Docker Desktop (or start the Docker daemon), then run:"))
-		fmt.Println(pipe() + "  " + cyan.Render(arg0+" "+rerunArgs))
+		fmt.Println(pipe() + "  " + muted.Render("Start Docker, then re-run with the same flags."))
 		fmt.Println(pipe())
 		os.Exit(1)
 	}
@@ -109,8 +215,8 @@ func main() {
 	fmt.Println(check.Render("◇  ") + green.Render("Done! Project generated in ./"+outDir))
 	fmt.Println(pipe())
 
-	if m.SetupVenv {
-		if m.UseDocker {
+	if setupVenv {
+		if useDocker {
 			fmt.Println(pipe() + "  " + cyan.Render("Running docker compose up --build..."))
 			fmt.Println(pipe())
 			if err := generator.RunDockerCompose(outDir); err != nil {
@@ -120,20 +226,19 @@ func main() {
 		} else {
 			fmt.Println(pipe() + "  " + cyan.Render("Starting dev server..."))
 			fmt.Println(pipe())
-			if err := generator.RunDevServer(outDir, m.UsePipenv); err != nil {
+			if err := generator.RunDevServer(outDir, usePipenv); err != nil {
 				fmt.Println(errSty.Render("❌ Failed to start dev server: " + err.Error()))
 				os.Exit(1)
 			}
 		}
 	} else {
-		// just print next steps
 		fmt.Println(pipe() + "  " + cyan.Render("Next steps:"))
 		if outDir != "." {
 			fmt.Println(pipe() + "  " + muted.Render("cd "+outDir))
 		}
-		if m.UseDocker {
+		if useDocker {
 			fmt.Println(pipe() + "  " + muted.Render("docker compose up --build"))
-		} else if m.UsePipenv {
+		} else if usePipenv {
 			fmt.Println(pipe() + "  " + muted.Render("pipenv install"))
 			fmt.Println(pipe() + "  " + muted.Render("pipenv shell"))
 			fmt.Println(pipe() + "  " + muted.Render("fastapi dev app"))

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "setuptools-scm"]
+requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -31,5 +31,5 @@ Repository = "https://github.com/markryangarcia/fapi-init"
 where = ["."]
 include = ["fapi_init*"]
 
-[tool.setuptools_scm]
-root = ".."
+[tool.setuptools.dynamic]
+version = { file = "../VERSION" }
