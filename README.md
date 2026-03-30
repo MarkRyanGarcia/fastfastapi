@@ -1,35 +1,49 @@
-# fastapi-gen
+# fapi-init
 
 A CLI tool that scaffolds a production-ready FastAPI project with an interactive TUI. Choose your database, ORM, auth provider, package manager, and optional Docker/Redis support — and get a fully structured project in seconds.
 
-![fastapi-gen-demo](https://github.com/user-attachments/assets/daf1ad03-7a99-4c78-8bd7-9cce442bbfe3)
-
-## Prerequisites
-
-- [Go](https://go.dev/dl/) 1.21+
-- Python 3.11+
-- `pipenv` (optional, only if you choose it during setup)
-- Docker (optional, only if you choose Docker support)
+![fapi-init-demo](https://github.com/user-attachments/assets/daf1ad03-7a99-4c78-8bd7-9cce442bbfe3)
 
 ## Installation
 
+### via pip (recommended)
+
 ```bash
-go install github.com/markryangarcia/fastapi-gen@latest
+pip install fapi-init
+```
+
+### via pipx
+
+```bash
+pipx install fapi-init
+```
+
+### via Go
+
+```bash
+go install github.com/markryangarcia/fapi-init@latest
 ```
 
 Make sure `$GOPATH/bin` (or `$HOME/go/bin`) is in your `PATH`.
+
+## Prerequisites
+
+- Python 3.8+ (for pip/pipx install)
+- [Go](https://go.dev/dl/) 1.21+ (only if installing via Go)
+- `pipenv` (optional, only if you choose it during setup)
+- Docker (optional, only if you choose Docker support)
 
 ## Usage
 
 ```bash
 # Create a new project in a new directory
-fastapi-gen
+fapi-init
 
 # Scaffold into the current directory
-fastapi-gen .
+fapi-init .
 
 # Pass a project name directly (skips the name prompt)
-fastapi-gen my-api
+fapi-init my-api
 ```
 
 The TUI walks you through:
