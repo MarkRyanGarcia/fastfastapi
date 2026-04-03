@@ -1,4 +1,4 @@
-module github.com/markryangarcia/fapi-init
+module github.com/markryangarcia/fastfastapi
 
 go 1.26.1
 

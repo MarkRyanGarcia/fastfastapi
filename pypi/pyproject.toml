@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "fapi-init"
+name = "fastfastapi"
 dynamic = ["version"]
 description = "Scaffold a production-ready FastAPI project in seconds"
 readme = "README.md"
@@ -21,15 +21,16 @@ classifiers = [
 ]
 
 [project.scripts]
-fapi-init = "fapi_init:main"
+fastfastapi = "fastfastapi:main"
+ffa = "fastfastapi:ffa"
 
 [project.urls]
-Homepage = "https://github.com/markryangarcia/fapi-init"
-Repository = "https://github.com/markryangarcia/fapi-init"
+Homepage = "https://github.com/markryangarcia/fastfastapi"
+Repository = "https://github.com/markryangarcia/fastfastapi"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["fapi_init*"]
+include = ["fastfastapi*"]
 
 [tool.setuptools.dynamic]
 version = { file = "VERSION" }

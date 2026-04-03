@@ -64,7 +64,7 @@ jobs:
     needs: tag-and-release
     environment:
       name: pypi
-      url: https://pypi.org/p/fapi-init
+      url: https://pypi.org/p/fastfastapi
     permissions:
       id-token: write
     steps:

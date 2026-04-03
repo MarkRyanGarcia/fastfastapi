@@ -1,4 +1,4 @@
-"""Downloads and caches the fapi-init binary from GitHub Releases."""
+"""Downloads and caches the fastfastapi binary from GitHub Releases."""
 
 import os
 import platform
@@ -11,9 +11,8 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
-GITHUB_REPO = "markryangarcia/fapi-init"
-BIN_NAME = "fapi-init"
-CACHE_DIR = Path.home() / ".cache" / "fapi-init"
+GITHUB_REPO = "markryangarcia/fastfastapi"
+CACHE_DIR = Path.home() / ".cache" / "fastfastapi"
 
 
 def _platform_asset() -> str:
@@ -23,18 +22,18 @@ def _platform_asset() -> str:
     arch = "arm64" if machine in ("arm64", "aarch64") else "amd64"
 
     if system == "darwin":
-        return f"fapi-init_darwin_{arch}.tar.gz"
+        return f"fastfastapi_darwin_{arch}.tar.gz"
     elif system == "linux":
-        return f"fapi-init_linux_{arch}.tar.gz"
+        return f"fastfastapi_linux_{arch}.tar.gz"
     elif system == "windows":
-        return f"fapi-init_windows_{arch}.zip"
+        return f"fastfastapi_windows_{arch}.zip"
     else:
         raise RuntimeError(f"Unsupported platform: {system}/{machine}")
 
 
-def _bin_path(version: str) -> Path:
+def _bin_path(version: str, bin_name: str) -> Path:
     suffix = ".exe" if platform.system().lower() == "windows" else ""
-    return CACHE_DIR / version / (BIN_NAME + suffix)
+    return CACHE_DIR / version / (bin_name + suffix)
 
 
 def _ssl_context() -> ssl.SSLContext:
@@ -59,8 +58,8 @@ def _ssl_context() -> ssl.SSLContext:
     return ctx
 
 
-def ensure_binary(version: str) -> Path:
-    bin_path = _bin_path(version)
+def ensure_binary(version: str, bin_name: str = "fastfastapi") -> Path:
+    bin_path = _bin_path(version, bin_name)
     if bin_path.exists():
         return bin_path
 
@@ -70,7 +69,7 @@ def ensure_binary(version: str) -> Path:
     bin_path.parent.mkdir(parents=True, exist_ok=True)
 
     archive_path = bin_path.parent / asset
-    print(f"Downloading fapi-init v{version}...", file=sys.stderr)
+    print(f"Downloading fastfastapi v{version}...", file=sys.stderr)
 
     ctx = _ssl_context()
     with urllib.request.urlopen(url, context=ctx) as response, open(archive_path, "wb") as out:
@@ -85,5 +84,10 @@ def ensure_binary(version: str) -> Path:
 
     archive_path.unlink()
 
-    bin_path.chmod(bin_path.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+    # Mark all extracted binaries executable
+    for name in ("fastfastapi", "ffa"):
+        p = _bin_path(version, name)
+        if p.exists():
+            p.chmod(p.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+
     return bin_path

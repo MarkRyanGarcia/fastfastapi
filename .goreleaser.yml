@@ -5,8 +5,22 @@ before:
     - go mod tidy
 
 builds:
-  - id: fapi-init
-    binary: fapi-init
+  - id: fastfastapi
+    binary: fastfastapi
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+  - id: ffa
+    binary: ffa
+    main: ./cmd/ffa
     goos:
       - linux
       - darwin
@@ -20,8 +34,11 @@ builds:
       - -s -w
 
 archives:
-  - id: fapi-init
-    name_template: "fapi-init_{{ .Os }}_{{ .Arch }}"
+  - id: fastfastapi
+    builds:
+      - fastfastapi
+      - ffa
+    name_template: "fastfastapi_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows
         format: zip
@@ -34,7 +51,7 @@ checksum:
 release:
   github:
     owner: markryangarcia
-    name: fapi-init
+    name: fastfastapi
   draft: false
   prerelease: auto
 

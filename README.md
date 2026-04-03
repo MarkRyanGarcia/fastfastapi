@@ -1,28 +1,26 @@
-# fapi-init
+# fastfastapi
 
 A CLI tool that scaffolds a production-ready FastAPI project with an interactive TUI. Choose your database, ORM, auth provider, package manager, and optional Docker/Redis support, and get a fully structured project in seconds.
-
-![fapi-init-demo](https://github.com/user-attachments/assets/955c3cb0-bfda-4879-bc79-591cc5d14c41)
-
 
 ## Installation
 
 ### via pip (recommended)
 
 ```bash
-pip install fapi-init
+pip install fastfastapi
 ```
 
 ### via pipx
 
 ```bash
-pipx install fapi-init
+pipx install fastfastapi
 ```
 
 ### via Go
 
 ```bash
-go install github.com/markryangarcia/fapi-init@latest
+go install github.com/markryangarcia/fastfastapi@latest
+go install github.com/markryangarcia/fastfastapi/cmd/ffa@latest
 ```
 
 Make sure `$GOPATH/bin` (or `$HOME/go/bin`) is in your `PATH`.
@@ -38,13 +36,16 @@ Make sure `$GOPATH/bin` (or `$HOME/go/bin`) is in your `PATH`.
 
 ```bash
 # Create a new project in a new directory
-fapi-init
+fastfastapi
 
 # Scaffold into the current directory
-fapi-init .
+fastfastapi .
 
 # Pass a project name directly (skips the name prompt)
-fapi-init my-api
+fastfastapi my-api
+
+# ffa is an alias for fastfastapi
+ffa my-api
 ```
 
 The TUI walks you through:
